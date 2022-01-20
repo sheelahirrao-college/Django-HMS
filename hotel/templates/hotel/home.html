@@ -1,0 +1,15 @@
+{% extends 'hotel/base.html' %}
+
+{% block content %}
+    {% if request.user.is_authenticated %}
+        <div class="header">
+            <h1>Hello {{ request.user.name }}</h1>
+            <a class="link" href="{% url 'hotel-logout' %}">Logout</a>
+        </div>
+    {% else %}
+        <div class="link">
+            <a href="{% url 'hotel-login' %}">Login</a>
+            <a href="{% url 'hotel-register' %}">Register</a>
+        </div>
+    {% endif %}
+{% endblock content %}
