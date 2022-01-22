@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from .forms import HotelRegistrationForm, HotelLoginForm
 
+
 def hotel_home(request):
     return render(request, 'hotel/home.html')
 
