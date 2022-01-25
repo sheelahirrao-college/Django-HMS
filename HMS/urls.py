@@ -17,9 +17,11 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
+    # path('room/', include('room.urls')),
     path('hotel/', include('hotel.urls')),
     path('admin/', admin.site.urls),
 
     #Rest Framework URLs
     path('api/hotel/', include('hotel.api.urls', 'hotel_api')),
+    path('api/room/', include('room.api.urls', 'room_api')),
 ]
