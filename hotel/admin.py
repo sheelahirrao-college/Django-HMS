@@ -13,13 +13,18 @@ class HotelAdmin(BaseUserAdmin):
         (None, {
             'fields': ('name', 'description', 'email', 'contact', 'username', 'password')
         }),
-        ('Permissions', {'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')}),
+        ('Permissions', {
+            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
+        }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide'),
-            'fields': ('name', 'description', 'email', 'contact', 'username', 'password')
+            'fields': ('name', 'description', 'email', 'contact', 'username', 'password1', 'password2')
+        }),
+        ('Permissions', {
+            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
         }),
     )
 
