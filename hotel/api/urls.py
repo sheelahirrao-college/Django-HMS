@@ -1,11 +1,12 @@
 from django.urls import path
-from . import views
-
-from rest_framework.authtoken.views import obtain_auth_token
+from .views import (
+    HotelRegistrationAPIView,
+    HotelLoginAPIView,
+)
 
 app_name = 'hotel'
 
 urlpatterns = [
-    path('registerapi', views.hotel_registration_api_view, name='hotel-register-api'),
-    path('loginapi', obtain_auth_token, name='hotel-login-api')
+    path('registerapi', HotelRegistrationAPIView.as_view(), name='hotel-register-api'),
+    path('loginapi', HotelLoginAPIView.as_view(), name='hotel-login-api')
 ]

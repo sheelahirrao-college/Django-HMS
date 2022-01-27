@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
+
 class HotelManager(BaseUserManager):
     def create_user(self, name, description, email, contact, username, password=None):
         hotel_user = self.model(
@@ -36,6 +37,7 @@ class HotelManager(BaseUserManager):
 
         return hotel_user
 
+
 class Hotel(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=200)
@@ -63,6 +65,7 @@ class Hotel(AbstractBaseUser, PermissionsMixin):
 
     def has_module_perm(self, app_label):
         return True
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
