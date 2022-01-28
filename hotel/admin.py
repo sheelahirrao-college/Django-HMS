@@ -2,9 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import Hotel
 
+
 class HotelAdmin(BaseUserAdmin):
-    list_display = ('name', 'description', 'email', 'contact', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
-    search_fields = ('name', 'description', 'email', 'contact', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
+    list_display = ('id', 'username', 'name', 'description', 'email', 'contact', 'date_joined', 'last_login', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
+    search_fields = ('id', 'username', 'name', 'description', 'email', 'contact', 'date_joined', 'last_login', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
     readonly_fields = ('date_joined', 'last_login')
 
     filter_horizontal = ()
@@ -20,7 +21,7 @@ class HotelAdmin(BaseUserAdmin):
 
     add_fieldsets = (
         (None, {
-            'classes': ('wide'),
+            'classes': ('wide',),
             'fields': ('name', 'description', 'email', 'contact', 'username', 'password1', 'password2')
         }),
         ('Permissions', {
@@ -28,6 +29,7 @@ class HotelAdmin(BaseUserAdmin):
         }),
     )
 
-    ordering = ('name',)
+    ordering = ('id',)
+
 
 admin.site.register(Hotel, HotelAdmin)

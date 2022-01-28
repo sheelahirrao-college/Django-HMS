@@ -6,28 +6,40 @@ from django.utils.text import slugify
 from django.dispatch import receiver
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
+    slug = models.SlugField(blank=True, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Room(models.Model):
-    number = models.CharField(max_length=10)
-    type = models.CharField(max_length=100)
+    number = models.CharField(max_length=10, unique=True)
+    category = models.ForeignKey(Category, to_field='name', blank=True, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="room-images")
-    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
+    hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
+    available = models.BooleanField(default=True)
     slug = models.SlugField(blank=True, unique=True)
 
     def __str__(self):
         return self.number
 
 
-class Category(models.Model):
-    name = models.CharField(max_length=100)
-    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, primary_key=True)
+@receiver(pre_save, sender=Category)
+def pre_save_receiver_category(sender, instance, *args, **kwargs):
+    if not instance.slug:
+        instance.slug = slugify(str(instance.hotel.id) + "-" + instance.name)
 
-    def __str__(self):
-        return self.name
+
+pre_save.connect(pre_save_receiver_category, sender=Category)
 
 
 @receiver(pre_save, sender=Room)
-def pre_save_receiver(sender, instance, *args, **kwargs):
+def pre_save_receiver_room(sender, instance, *args, **kwargs):
     if not instance.slug:
         instance.slug = slugify(str(instance.hotel.id) + "-" + instance.number)
 
-pre_save.connect(pre_save_receiver, sender=Room)
+
+pre_save.connect(pre_save_receiver_room, sender=Room)

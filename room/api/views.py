@@ -1,72 +1,140 @@
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .serializers import RoomSerializer
+from rest_framework.views import APIView
+from .serializers import RoomSerializer, CategorySerializer
 
-from room.models import Room
-from hotel.models import Hotel
-
-
-@api_view(['GET',])
-@permission_classes((IsAuthenticated,))
-def room_detail_api_view(request, slug):
-    room = Room.objects.filter(slug=slug)
-    serializer = RoomSerializer(room, many=True)
-    return Response(serializer.data)
+from room.models import Room, Category
 
 
-@api_view(['Put',])
-@permission_classes((IsAuthenticated,))
-def room_update_api_view(request, slug):
-    room = Room.objects.get(slug=slug)
+class RoomAPIView(APIView):
 
-    hotel = request.user
-    room = Room(hotel=hotel)
-    if room.hotel != hotel:
-        return Response({'response': 'You do not have permission to edit that'})
+    permission_classes = [IsAuthenticated]
 
-    serializer = RoomSerializer(room, data=request.data)
-    data = {}
-    if serializer.is_valid():
-        serializer.save()
-        data['success'] = "Update Successful"
-        return Response(data=data)
-    return Response(serializer.errors)
-
-
-@api_view(['DELETE',])
-@permission_classes((IsAuthenticated,))
-def room_delete_api_view(request, slug):
-    room = Room.objects.get(slug=slug)
-
-    hotel = request.user
-    if room.hotel != hotel:
-        return Response({'response': 'You do not have permission to delete that'})
-
-    delete = room.delete()
-    data = {}
-    if delete:
-        data['success'] = 'Delete Successful'
-    else:
-        data['failure'] = 'Delete Failed'
-    return Response(data=data)
-
-
-@api_view(['POST',])
-@permission_classes((IsAuthenticated,))
-def room_create_api_view(request):
-    hotel = request.user
-    room = Room(hotel=hotel)
-    serializer = RoomSerializer(room, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
+    def get(self, request, slug):
+        room = Room.objects.filter(slug=slug)
+        hotel = request.user
+        if room.hotel != hotel:
+            return Response({
+                'response': 'You do not have permission to view this room'
+            })
+        serializer = RoomSerializer(room, many=True)
         return Response(serializer.data)
-    return Response(serializer.errors)
+
+    def post(self, request, slug):
+        slug = 'newroom'
+        room = Room()
+        serializer = RoomSerializer(room, data=request.data)
+        request.data['hotel'] = request.user.id
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'response': 'Room Created Successfully',
+                'data': serializer.data
+            })
+        return Response(serializer.errors)
+
+    def put(self, request, slug):
+        room = Room.objects.get(slug=slug)
+        hotel = request.user
+        if room.hotel != hotel:
+            return Response({
+                'response': 'You do not have permission to edit this room'
+            })
+        serializer = RoomSerializer(room, data=request.data)
+        request.data['hotel'] = request.user.id
+        data = {}
+        if serializer.is_valid():
+            serializer.save()
+            data['success'] = "Room Updated Successfully"
+            return Response(data=data)
+        return Response(serializer.errors)
+
+    def delete(self, request, slug):
+        room = Room.objects.get(slug=slug)
+        hotel = request.user
+        if room.hotel != hotel:
+            return Response({
+                'response': 'You do not have permission to delete this room'
+            })
+        delete = room.delete()
+        data = {}
+        if delete:
+            data['success'] = 'Room Deleted Successfully'
+        else:
+            data['failure'] = 'Room Delete Failed'
+        return Response(data=data)
 
 
-@api_view(['GET',])
-@permission_classes((IsAuthenticated,))
-def all_rooms_api_view(request):
-    room = Room.objects.filter(hotel=request.user.id)
-    serializer = RoomSerializer(room, many=True)
-    return Response(serializer.data)
+class RoomsAPIView(APIView):
+
+    def get(self, request):
+        room = Room.objects.filter(hotel=request.user.id)
+        serializer = RoomSerializer(room, many=True)
+        return Response(serializer.data)
+
+
+class CategoryAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        category = Category.objects.filter(slug=slug)
+        hotel = request.user
+        if category.hotel != hotel:
+            return Response({
+                'response': 'You do not have permission to view this category'
+            })
+        serializer = CategorySerializer(category, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, slug):
+        slug = 'newcategory'
+        category = Category()
+        serializer = CategorySerializer(category, data=request.data)
+        request.data['hotel'] = request.user.id
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'response': 'Category Created Successfully',
+                'data': serializer.data
+            })
+        return Response(serializer.errors)
+
+    def put(self, request, slug):
+        category = Category.objects.get(slug=slug)
+        hotel = request.user
+        if category.hotel != hotel:
+            return Response({
+                'response': 'You do not have permission to edit this category'
+            })
+        serializer = CategorySerializer(category, data=request.data)
+        # request.data['hotel'] = request.user.id
+        data = {}
+        if serializer.is_valid():
+            serializer.save()
+            data['success'] = "Category Updated Successfully"
+            return Response(data=data)
+        return Response(serializer.errors)
+
+    def delete(self, request, slug):
+        category = Category.objects.get(slug=slug)
+        hotel = request.user
+        if category.hotel != hotel:
+            return Response({
+                'response': 'You do not have permission to delete this category'
+            })
+        delete = category.delete()
+        data = {}
+        if delete:
+            data['success'] = 'Category Deleted Successfully'
+        else:
+            data['failure'] = 'Category Delete Failed'
+        return Response(data=data)
+
+
+class CategoriesAPIView(APIView):
+
+    def get(self, request):
+        category = Category.objects.filter(hotel=request.user.id)
+        serializer = CategorySerializer(category, many=True)
+        return Response(serializer.data)
