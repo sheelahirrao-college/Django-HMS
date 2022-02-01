@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import Room, Category
+from hotel.models import Hotel
 
 
 class RoomAdmin(admin.ModelAdmin):
@@ -23,6 +24,14 @@ class RoomAdmin(admin.ModelAdmin):
         else:
             return qs.filter(user=request.user)
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(RoomAdmin, self).get_form(request, obj, **kwargs)
+        form.base_fields['category'].queryset = Category.objects.filter(hotel=request.user.id)
+        form.base_fields['hotel'].queryset = Hotel.objects.filter(id=request.user.id)
+        form.base_fields['hotel'].initial = request.user
+
+        return form
+
 
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'hotel', 'slug')
@@ -43,6 +52,12 @@ class CategoryAdmin(admin.ModelAdmin):
             return qs
         else:
             return qs.filter(user=request.user)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(CategoryAdmin, self).get_form(request, obj, **kwargs)
+        form.base_fields['hotel'].queryset = Hotel.objects.filter(id=request.user.id)
+        form.base_fields['hotel'].initial = request.user.id
+        return form
 
 
 admin.site.register(Room, RoomAdmin)
