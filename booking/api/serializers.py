@@ -1,0 +1,17 @@
+from rest_framework import serializers
+from booking.models import Booking
+from room.models import Room
+
+
+class BookingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'hotel', 'room', 'booked_on', 'start_date', 'end_date', 'no_of_days', 'slug']
+
+
+class AvailableRoomSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Room
+        fields = ['id', 'number', 'category', 'hotel', 'slug']

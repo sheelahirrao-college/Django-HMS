@@ -31,8 +31,12 @@ class RoomAPIView(APIView):
         slug = 'newroom'
         request.data._mutable = True
         request.data['hotel'] = request.user.id
-        request.data._mutable = True
-        serializer = RoomSerializer(data=request.data)
+        if request.data['booked_from'] is None and request.data['booked_to'] is None:
+            request.data['available'] = True
+        else:
+            request.data['available'] = False
+        request.data._mutable = False
+        serializer = RoomSerializer(data=request.data, partial=True)
 
         category = Category.objects.filter(hotel=request.user.id).values('name')
         for c in category:
@@ -63,6 +67,10 @@ class RoomAPIView(APIView):
 
         request.data._mutable = True
         request.data['hotel'] = request.user.id
+        if request.data['booked_from'] is None and request.data['booked_to'] is None:
+            request.data['available'] = True
+        else:
+            request.data['available'] = False
         request.data._mutable = False
         serializer = RoomSerializer(room, data=request.data, partial=True)
         data = {}
@@ -151,6 +159,7 @@ class CategoryAPIView(APIView):
 
         request.data._mutable = True
         request.data['hotel'] = request.user.id
+        request.data['slug'] = request.user.id + request.data.number
         request.data._mutable = False
         serializer = CategorySerializer(category, data=request.data, partial=True)
         data = {}

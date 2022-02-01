@@ -5,8 +5,8 @@ from hotel.models import Hotel
 
 
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ('id', 'number', 'category', 'image', 'hotel', 'available', 'slug')
-    search_fields = ('id', 'number', 'category', 'image', 'hotel', 'available', 'slug')
+    list_display = ('id', 'number', 'category', 'image', 'hotel', 'booked_from', 'booked_to', 'available', 'slug')
+    search_fields = ('id', 'number', 'category', 'image', 'hotel', 'booked_from', 'booked_to', 'available', 'slug')
 
     filter_horizontal = ()
     list_filter = ()
@@ -14,6 +14,10 @@ class RoomAdmin(admin.ModelAdmin):
     ordering = ('id',)
 
     def save_model(self, request, obj, form, change):
+        if obj.booked_from is None and obj.booked_to is None:
+            obj.available = True
+        else:
+            obj.available = False
         obj.hotel = request.user
         obj.save()
 

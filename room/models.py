@@ -20,6 +20,8 @@ class Room(models.Model):
     category = models.ForeignKey(Category, to_field='name', blank=True, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="room-images")
     hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
+    booked_from = models.DateField(blank=True, null=True)
+    booked_to = models.DateField(blank=True, null=True)
     available = models.BooleanField(default=True)
     slug = models.SlugField(blank=True, unique=True)
 
@@ -31,6 +33,8 @@ class Room(models.Model):
 def pre_save_receiver_category(sender, instance, *args, **kwargs):
     if not instance.slug:
         instance.slug = slugify(str(instance.hotel.id) + "-" + instance.name)
+    else:
+        instance.slug = slugify(str(instance.hotel.id) + "-" + instance.name)
 
 
 pre_save.connect(pre_save_receiver_category, sender=Category)
@@ -39,6 +43,8 @@ pre_save.connect(pre_save_receiver_category, sender=Category)
 @receiver(pre_save, sender=Room)
 def pre_save_receiver_room(sender, instance, *args, **kwargs):
     if not instance.slug:
+        instance.slug = slugify(str(instance.hotel.id) + "-" + instance.number)
+    else:
         instance.slug = slugify(str(instance.hotel.id) + "-" + instance.number)
 
 
