@@ -1,7 +1,6 @@
 from django.dispatch import receiver
 from django.utils.text import slugify
 from django.db.models.signals import pre_save
-
 from django.db import models
 
 from hotel.models import Hotel
@@ -15,15 +14,15 @@ class Booking(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     no_of_days = models.IntegerField()
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True, unique=True)
 
 
 @receiver(pre_save, sender=Booking)
 def pre_save_receiver_booking(sender, instance, *args, **kwargs):
     if not instance.slug:
-        instance.slug = slugify(instance.id)
+        instance.slug = slugify(str(instance.hotel) + '-' + str(instance.room))
     else:
-        instance.slug = slugify(instance.id)
+        instance.slug = slugify(str(instance.hotel) + '-' + str(instance.room))
 
 
 pre_save.connect(pre_save_receiver_booking, sender=Booking)

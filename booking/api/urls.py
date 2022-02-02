@@ -1,9 +1,12 @@
 from django.urls import path
-from .views import Booking, RoomBooking
+from .views import (
+    BookRoom,
+    AvailableRooms,
+)
 
 app_name = 'booking'
 
 urlpatterns = [
-    path('bookingapi', Booking.as_view(), name='booking-api'),
-    path('roombookingapi/<slug>', RoomBooking.as_view(), name='room-booking-api'),
+    path('bookroomapi/<slug>', BookRoom.as_view(), name='book-room-api'),
+    path('availableroomsapi', AvailableRooms.as_view(), name='available-rooms-api'),
 ]
