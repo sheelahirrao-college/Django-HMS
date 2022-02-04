@@ -38,11 +38,12 @@ class RoomAPIView(APIView):
         request.data._mutable = False
         serializer = RoomSerializer(data=request.data, partial=True)
 
-        category = Category.objects.filter(hotel=request.user.id).values('name')
-        for c in category:
+        categories = Category.objects.filter(hotel=request.user.id).values('name')
+        for c in categories:
             if request.data['category'] != c['name']:
                 return Response({
                     'response': 'Invalid Category',
+                    'category': c,
                 })
             else:
                 if serializer.is_valid():

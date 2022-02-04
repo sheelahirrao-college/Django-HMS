@@ -119,10 +119,11 @@ class BookRoom(APIView):
             request.data['booked_to'] = ed
             request.data._mutable = False
 
-        serializer = RoomSerializer(room, data=request.data)
+        serializer = RoomSerializer(room, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response('Room Booked Status Updated Successfully')
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, slug):
 

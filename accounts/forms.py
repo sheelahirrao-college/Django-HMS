@@ -3,11 +3,13 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate
 from .models import Hotel
 
+
 class HotelRegistrationForm(UserCreationForm):
 
     class Meta:
         model = Hotel
-        fields = ('name', 'description', 'email', 'contact', 'username')
+        fields = ('name', 'contact', 'user')
+
 
 class HotelLoginForm(forms.ModelForm):
 
@@ -15,7 +17,7 @@ class HotelLoginForm(forms.ModelForm):
 
     class Meta:
         model = Hotel
-        fields = ('username', 'password')
+        fields = ('user',)
 
     def clean(self):
         username = self.cleaned_data['username']

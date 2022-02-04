@@ -3,7 +3,7 @@ from django.utils.text import slugify
 from django.db.models.signals import pre_save
 from django.db import models
 
-from hotel.models import Hotel
+from accounts.models import Hotel
 from room.models import Room
 
 
@@ -15,6 +15,9 @@ class Booking(models.Model):
     end_date = models.DateField()
     no_of_days = models.IntegerField()
     slug = models.SlugField(blank=True, unique=True)
+
+    def __str__(self):
+        return self.slug
 
 
 @receiver(pre_save, sender=Booking)

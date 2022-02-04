@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Booking
-from hotel.models import Hotel
+from accounts.models import Hotel
 from room.models import Room
 
 

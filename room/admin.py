@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import Room, Category
-from hotel.models import Hotel
+from accounts.models import Hotel
 
 
 class RoomAdmin(admin.ModelAdmin):
