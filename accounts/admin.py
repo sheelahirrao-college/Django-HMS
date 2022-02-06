@@ -4,15 +4,14 @@ from .models import User, Hotel, RoomManager, Customer
 
 
 class UserAdmin(BaseUserAdmin):
-    list_display = ('id', 'username', 'email', 'date_joined', 'last_login', 'is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
-    search_fields = ('id', 'username', 'email', 'date_joined', 'last_login', 'is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
-    readonly_fields = ('date_joined', 'last_login')
+    list_display = ('id', 'username', 'email', 'usertype', 'date_joined', 'last_login', 'is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
+    search_fields = ('id', 'username', 'email', 'usertype', 'date_joined', 'last_login', 'is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
 
     filter_horizontal = ()
     list_filter = ()
     fieldsets = (
         (None, {
-            'fields': ('email', 'username', 'password')
+            'fields': ('email', 'usertype', 'username', 'password')
         }),
         ('Permissions', {
             'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
@@ -22,7 +21,7 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'username', 'password1', 'password2')
+            'fields': ('email', 'usertype', 'username', 'password1', 'password2')
         }),
         ('Permissions', {
             'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
@@ -31,85 +30,78 @@ class UserAdmin(BaseUserAdmin):
 
     ordering = ('id',)
 
+    def save_model(self, request, obj, form, change):
+        if obj.usertype == 'Hotel':
+            obj.is_hotel = True
+            obj.save()
+        elif obj.usertype == 'Room Manager':
+            obj.is_room_manager = True
+            obj.save()
+        else:
+            obj.is_customer = True
+            obj.save()
 
-class HotelAdmin(BaseUserAdmin):
-    list_display = ('id', 'name', 'contact')
-    search_fields = ('id', 'name', 'contact')
+
+class HotelAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'contact', 'user')
+    search_fields = ('id', 'name', 'contact', 'user')
 
     filter_horizontal = ()
     list_filter = ()
     fieldsets = (
         (None, {
-            'fields': ('name', 'email', 'contact', 'username', 'password')
-        }),
-        ('Permissions', {
-            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('user', 'name', 'contact')
         }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('name', 'email', 'contact', 'username', 'password1', 'password2')
-        }),
-        ('Permissions', {
-            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('user', 'name', 'contact')
         }),
     )
 
     ordering = ('id',)
 
 
-class RoomManagerAdmin(BaseUserAdmin):
-    list_display = ('id', 'name', 'contact', 'hotel')
-    search_fields = ('id', 'name', 'contact', 'hotel')
+class RoomManagerAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'contact', 'hotel', 'user')
+    search_fields = ('id', 'name', 'contact', 'hotel', 'user')
 
     filter_horizontal = ()
     list_filter = ()
     fieldsets = (
         (None, {
-            'fields': ('name', 'email', 'contact', 'username', 'password', 'hotel')
-        }),
-        ('Permissions', {
-            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('user', 'name', 'contact', 'hotel')
         }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('name', 'email', 'contact', 'username', 'password1', 'password2', 'hotel')
-        }),
-        ('Permissions', {
-            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('user', 'name', 'contact', 'hotel')
         }),
     )
 
     ordering = ('id',)
 
 
-class CustomerAdmin(BaseUserAdmin):
-    list_display = ('id', 'name', 'contact')
-    search_fields = ('id', 'name', 'contact')
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'contact', 'user')
+    search_fields = ('id', 'name', 'contact', 'user')
 
     filter_horizontal = ()
     list_filter = ()
     fieldsets = (
         (None, {
-            'fields': ('name', 'email', 'contact', 'username', 'password')
-        }),
-        ('Permissions', {
-            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('user', 'name', 'contact')
         }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('name', 'email', 'contact', 'username', 'password1', 'password2')
-        }),
-        ('Permissions', {
-            'fields': ('is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('user', 'name', 'contact')
         }),
     )
 

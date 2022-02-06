@@ -1,20 +1,20 @@
 from django.urls import path
 from .views import (
-    HotelRegistrationAPIView,
-    HotelLoginView,
-    RoomManagerRegistrationAPIView,
-    RoomManagerLoginView,
-    CustomerRegistrationAPIView,
-    CustomerLoginView,
+    UserRegistration,
+    UserLogin,
+    Hotel,
+    RoomManager,
+    Customer,
+    HotelRegistration,
 )
 
 app_name = 'hotel'
 
 urlpatterns = [
-    path('hotelregisterapi', HotelRegistrationAPIView.as_view(), name='hotel-register-api'),
-    path('hotelloginapi', HotelLoginView.as_view(), name='hotel-login-api'),
-    path('roommanagerregisterapi', RoomManagerRegistrationAPIView.as_view(), name='roommanager-register-api'),
-    path('roommanagerloginapi', RoomManagerLoginView.as_view(), name='roommanager-login-api'),
-    path('customerregisterapi', CustomerRegistrationAPIView.as_view(), name='customer-register-api'),
-    path('customerloginapi', CustomerLoginView.as_view(), name='customer-login-api'),
+    path('hotelregistrationapi', HotelRegistration.as_view(), name='hotel-registration-api'),
+    path('customerapi', Customer.as_view(), name='customer-api'),
+    path('roommanagerapi', RoomManager.as_view(), name='room-manager-api'),
+    path('hotelapi', Hotel.as_view(), name='hotel-api'),
+    path('userregistrationapi', UserRegistration.as_view(), name='user-registration-api'),
+    path('userloginapi', UserLogin.as_view(), name='user-login-api'),
 ]

@@ -7,9 +7,10 @@ from .serializers import (
     CategorySerializer,
 )
 from room.models import Room, Category
+from accounts.models import Hotel
 
 
-class RoomAPIView(APIView):
+class Room(APIView):
 
     permission_classes = [IsAuthenticated]
 
@@ -19,7 +20,11 @@ class RoomAPIView(APIView):
         except Room.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        hotel = request.user
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         if room.hotel != hotel:
             return Response({
                 'response': 'You do not have permission to view this room',
@@ -29,8 +34,14 @@ class RoomAPIView(APIView):
 
     def post(self, request, slug):
         slug = 'newroom'
+
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         request.data._mutable = True
-        request.data['hotel'] = request.user.id
+        request.data['hotel'] = hotel.id
         if request.data['booked_from'] is None and request.data['booked_to'] is None:
             request.data['available'] = True
         else:
@@ -38,7 +49,7 @@ class RoomAPIView(APIView):
         request.data._mutable = False
         serializer = RoomSerializer(data=request.data, partial=True)
 
-        categories = Category.objects.filter(hotel=request.user.id).values('name')
+        categories = Category.objects.filter(hotel=hotel).values('name')
         for c in categories:
             if request.data['category'] != c['name']:
                 return Response({
@@ -60,14 +71,18 @@ class RoomAPIView(APIView):
         except Room.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        hotel = request.user
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         if room.hotel != hotel:
             return Response({
                 'response': 'You do not have permission to edit this room'
             })
 
         request.data._mutable = True
-        request.data['hotel'] = request.user.id
+        request.data['hotel'] = hotel.id
         if request.data['booked_from'] is None and request.data['booked_to'] is None:
             request.data['available'] = True
         else:
@@ -87,7 +102,11 @@ class RoomAPIView(APIView):
         except Room.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        hotel = request.user
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         if room.hotel != hotel:
             return Response({
                 'response': 'You do not have permission to delete this room'
@@ -102,15 +121,21 @@ class RoomAPIView(APIView):
         return Response(data=data)
 
 
-class RoomsAPIView(APIView):
+class Rooms(APIView):
 
     def get(self, request):
-        room = Room.objects.filter(hotel=request.user.id)
+
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        room = Room.objects.filter(hotel=hotel)
         serializer = RoomSerializer(room, many=True)
         return Response(serializer.data)
 
 
-class CategoryAPIView(APIView):
+class Category(APIView):
 
     permission_classes = [IsAuthenticated]
 
@@ -120,7 +145,11 @@ class CategoryAPIView(APIView):
         except Category.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        hotel = request.user
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         if category.hotel != hotel:
             return Response({
                 'response': 'You do not have permission to view this category'
@@ -133,8 +162,13 @@ class CategoryAPIView(APIView):
         slug = 'newcategory'
         category = Category()
 
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         request.data._mutable = True
-        request.data['hotel'] = request.user.id
+        request.data['hotel'] = hotel.id
         request.data._mutable = False
         serializer = CategorySerializer(category, data=request.data)
 
@@ -152,15 +186,19 @@ class CategoryAPIView(APIView):
         except Category.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        hotel = request.user
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         if category.hotel != hotel:
             return Response({
                 'response': 'You do not have permission to edit this category'
             })
 
         request.data._mutable = True
-        request.data['hotel'] = request.user.id
-        request.data['slug'] = request.user.id + request.data.number
+        request.data['hotel'] = hotel.id
+        request.data['slug'] = str(hotel.id) + request.data['name']
         request.data._mutable = False
         serializer = CategorySerializer(category, data=request.data, partial=True)
         data = {}
@@ -176,7 +214,11 @@ class CategoryAPIView(APIView):
         except Category.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        hotel = request.user
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         if category.hotel != hotel:
             return Response({
                 'response': 'You do not have permission to delete this category'
@@ -191,9 +233,15 @@ class CategoryAPIView(APIView):
         return Response(data=data)
 
 
-class CategoriesAPIView(APIView):
+class Categories(APIView):
 
     def get(self, request):
-        category = Category.objects.filter(hotel=request.user.id)
+
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        category = Category.objects.filter(hotel=hotel)
         serializer = CategorySerializer(category, many=True)
         return Response(serializer.data)

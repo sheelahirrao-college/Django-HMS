@@ -32,25 +32,16 @@ class UserManager(BaseUserManager):
         return user
 
 
-class UserType(models.Model):
-    HOTEL = 1
-    ROOM_MANAGER = 2
-    CUSTOMER = 3
-    CHOICES = (
-        (HOTEL, 'Hotel'),
-        (ROOM_MANAGER, 'Room Manager'),
-        (CUSTOMER, 'Customer'),
+class User(AbstractBaseUser, PermissionsMixin):
+    user_type = (
+        (1, 'Hotel'),
+        (2, 'Room Manager'),
+        (3, 'Customer'),
     )
 
-    id = models.PositiveSmallIntegerField(choices=CHOICES, primary_key=True)
-
-    def __str__(self):
-        return self.get_id_display()
-
-
-class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=20, unique=True)
+    usertype = models.PositiveSmallIntegerField(choices=user_type, default=1)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now=True)
     is_admin = models.BooleanField(default=False)
@@ -62,8 +53,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_room_manager = models.BooleanField(default=False)
     is_customer = models.BooleanField(default=False)
 
-    usertype = models.ManyToManyField(UserType)
-
     USERNAME_FIELD = 'username'
 
     REQUIRED_FIELDS = ['email']
@@ -71,7 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     def __str__(self):
-        return self.name
+        return self.username
 
     def has_perm(self, perm, obj=None):
         return True
@@ -85,11 +74,8 @@ class Hotel(models.Model):
     name = models.CharField(max_length=100, unique=True)
     contact = models.CharField(max_length=10, unique=True)
 
-
-class Customer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100, unique=True)
-    contact = models.CharField(max_length=10, unique=True)
+    def __str__(self):
+        return self.name
 
 
 class RoomManager(models.Model):
@@ -97,6 +83,18 @@ class RoomManager(models.Model):
     name = models.CharField(max_length=100, unique=True)
     contact = models.CharField(max_length=10, unique=True)
     hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
+class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, unique=True)
+    contact = models.CharField(max_length=10, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

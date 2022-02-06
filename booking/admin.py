@@ -14,8 +14,15 @@ class BookingAdmin(admin.ModelAdmin):
     ordering = ('id',)
 
     def save_model(self, request, obj, form, change):
-        obj.hotel = request.user
-        obj.save()
+        if request.user.is_hotel is True:
+            try:
+                hotel = Hotel.objects.get(user=request.user)
+                obj.hotel = hotel
+                obj.save()
+            except Hotel.DoesNotExist:
+                return 'Hotel Does Not Exist'
+        else:
+            return 'You are not Hotel'
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -26,9 +33,14 @@ class BookingAdmin(admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
         form = super(BookingAdmin, self).get_form(request, obj, **kwargs)
-        form.base_fields['room'].queryset = Room.objects.filter(hotel=request.user.id)
-        form.base_fields['hotel'].queryset = Hotel.objects.filter(id=request.user.id)
-        form.base_fields['hotel'].initial = request.user
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return 'Hotel Does Not Exist'
+
+        form.base_fields['room'].queryset = Room.objects.filter(hotel=hotel)
+        form.base_fields['hotel'].queryset = Hotel.objects.filter(user=request.user)
+        form.base_fields['hotel'].initial = hotel
 
         return form
 

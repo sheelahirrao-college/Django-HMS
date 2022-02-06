@@ -3,10 +3,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from datetime import datetime, date
+from datetime import datetime
 
 from room.models import Room
 from booking.models import Booking
+from accounts.models import Hotel
+
 from .serializers import (
     BookingSerializer,
     RoomSerializer,
@@ -44,7 +46,7 @@ class AvailableRooms(APIView):
         sd = datetime.strptime(start_date, '%Y-%m-%d').date()
         ed = datetime.strptime(end_date, '%Y-%m-%d').date()
 
-        rooms = Room.objects.filter()
+        rooms = Room.objects.all()
         available_rooms = []
         for room in rooms:
             response = self.check_availability(room, sd, ed)
@@ -59,7 +61,7 @@ class BookRoom(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, slug):
+    def get(self, request, slug):
         try:
             room = Room.objects.get(slug=slug)
         except Room.DoesNotExist:
@@ -75,8 +77,13 @@ class BookRoom(APIView):
         except Room.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
+        try:
+            hotel = Hotel.objects.get(user=request.user)
+        except Hotel.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
         request.data._mutable = True
-        request.data['hotel'] = request.user.id
+        request.data['hotel'] = hotel.id
         request.data['room'] = room.number
 
         start_date = request.data['start_date']
@@ -96,9 +103,27 @@ class BookRoom(APIView):
                 serializer.save()
                 return Response({
                     'response': 'Room Booked Successfully',
-                    'data': serializer.data
+                    'data': serializer.data,
                 })
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, slug):
+
+        try:
+            booking = Booking.objects.get(slug=slug)
+        except Booking.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        delete = booking.delete()
+        data = {}
+        if delete:
+            data['success'] = 'Booking Cancelled Successfully'
+        else:
+            data['failure'] = 'Booking Cancellation Failed'
+        return Response(data=data)
+
+
+class RoomBookedStatus(APIView):
 
     def put(self, request, slug):
 
@@ -113,7 +138,9 @@ class BookRoom(APIView):
         sd = datetime.strptime(start_date, '%Y-%m-%d').date()
         ed = datetime.strptime(end_date, '%Y-%m-%d').date()
 
-        if room.booked_from > sd and room.booked_to < ed:
+        if room.booked_from <= sd and room.booked_to >= ed:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
             request.data._mutable = True
             request.data['booked_from'] = sd
             request.data['booked_to'] = ed
@@ -124,18 +151,3 @@ class BookRoom(APIView):
             serializer.save()
             return Response('Room Booked Status Updated Successfully')
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, slug):
-
-        try:
-            booking = Booking.objects.get(slug=slug)
-        except Booking.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        delete = booking.delete()
-        data = {}
-        if delete:
-            data['success'] = 'Booking Cancelled Successfully'
-        else:
-            data['failure'] = 'Booking Cancellation Failed'
-        return Response(data=data)
