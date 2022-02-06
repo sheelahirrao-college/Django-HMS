@@ -5,9 +5,11 @@ from django.db import models
 
 from accounts.models import Hotel
 from room.models import Room
+from accounts.models import User
 
 
 class Booking(models.Model):
+    customer = models.ForeignKey(User, blank=True, on_delete=models.CASCADE)
     hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, to_field='number', on_delete=models.CASCADE)
     booked_on = models.DateTimeField(auto_now_add=True)
@@ -23,9 +25,9 @@ class Booking(models.Model):
 @receiver(pre_save, sender=Booking)
 def pre_save_receiver_booking(sender, instance, *args, **kwargs):
     if not instance.slug:
-        instance.slug = slugify(str(instance.hotel) + '-' + str(instance.room))
+        instance.slug = slugify(str(instance.user) + '-' + str(instance.hotel) + '-' + str(instance.room))
     else:
-        instance.slug = slugify(str(instance.hotel) + '-' + str(instance.room))
+        instance.slug = slugify(str(instance.user) + '-' + str(instance.hotel) + '-' + str(instance.room))
 
 
 pre_save.connect(pre_save_receiver_booking, sender=Booking)

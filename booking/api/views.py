@@ -24,19 +24,22 @@ class AvailableRooms(APIView):
 
         bookings = Booking.objects.filter(room=room)
 
-        if room.booked_from is None and room.booked_to is None:
-            for booking in bookings:
-                if booking.start_date > ed or booking.end_date < sd:
-                    return True
-                else:
-                    return False
+        if not(bookings):
+            return True
         else:
-            if room.booked_from > ed or room.booked_to < sd:
+            if room.booked_from is None and room.booked_to is None:
                 for booking in bookings:
                     if booking.start_date > ed or booking.end_date < sd:
                         return True
                     else:
                         return False
+            else:
+                if room.booked_from > ed or room.booked_to < sd:
+                    for booking in bookings:
+                        if booking.start_date > ed or booking.end_date < sd:
+                            return True
+                        else:
+                            return False
 
     def get(self, request):
 
@@ -151,3 +154,9 @@ class RoomBookedStatus(APIView):
             serializer.save()
             return Response('Room Booked Status Updated Successfully')
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Bookings(APIView):
+
+    def get(self, request):
+        bookings = Booking.objects.filter(user=request.user)
