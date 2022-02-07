@@ -21,6 +21,7 @@ from accounts.models import User, Hotel, RoomManager, Customer
 class UserRegistration(APIView):
 
     def post(self, request):
+
         serializer = UserRegistrationSerializer(data=request.data)
         data = {}
         if serializer.is_valid():
@@ -36,6 +37,7 @@ class UserRegistration(APIView):
 class UserLogin(APIView):
 
     def post(self, request):
+
         context = {}
 
         username = request.POST.get('username')
@@ -129,6 +131,7 @@ class RoomManagerProfile(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+
         serializer = RoomManagerSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -172,7 +175,18 @@ class CustomerProfile(APIView):
 
     permission_classes = [IsAuthenticated, IsCustomer]
 
+    def get(self, request):
+
+        try:
+            customer = Customer.objects.get(user=request.user)
+        except Customer.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CustomerSerializer(customer)
+        return Response(serializer.data)
+
     def post(self, request):
+
         serializer = CustomerSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -215,6 +229,7 @@ class CustomerProfile(APIView):
 class HotelRegistration(APIView):
 
     def post(self, request):
+
         serializer = HotelRegistrationSerializer(data=request.data)
         data = {}
         if serializer.is_valid():

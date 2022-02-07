@@ -18,6 +18,7 @@ class HotelRoom(APIView):
     permission_classes = [IsAuthenticated, IsRoomManager]
 
     def get(self, request, slug):
+
         try:
             room = Room.objects.get(slug=slug)
         except Room.DoesNotExist:
@@ -43,6 +44,7 @@ class HotelRoom(APIView):
         return Response(serializer.data)
 
     def post(self, request, slug):
+
         slug = 'newroom'
 
         try:
@@ -64,6 +66,7 @@ class HotelRoom(APIView):
         else:
             request.data['available'] = False
         request.data._mutable = False
+
         serializer = RoomSerializer(data=request.data, partial=True)
 
         categories = Category.objects.filter(hotel=hotel).values('name')
@@ -83,6 +86,7 @@ class HotelRoom(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, slug):
+
         try:
             room = Room.objects.get(slug=slug)
         except Room.DoesNotExist:
@@ -112,6 +116,7 @@ class HotelRoom(APIView):
         else:
             request.data['available'] = False
         request.data._mutable = False
+
         serializer = RoomSerializer(room, data=request.data, partial=True)
         data = {}
         if serializer.is_valid():
@@ -121,6 +126,7 @@ class HotelRoom(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, slug):
+
         try:
             room = Room.objects.get(slug=slug)
         except Room.DoesNotExist:
@@ -178,6 +184,7 @@ class HotelRoomCategory(APIView):
     permission_classes = [IsAuthenticated, IsRoomManager]
 
     def get(self, request, slug):
+
         try:
             category = Category.objects.get(slug=slug)
         except Category.DoesNotExist:
@@ -204,7 +211,9 @@ class HotelRoomCategory(APIView):
         return Response(serializer.data)
 
     def post(self, request, slug):
+
         slug = 'newcategory'
+
         category = Category()
 
         try:
@@ -233,6 +242,7 @@ class HotelRoomCategory(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, slug):
+
         try:
             category = Category.objects.get(slug=slug)
         except Category.DoesNotExist:
@@ -259,6 +269,7 @@ class HotelRoomCategory(APIView):
         request.data['hotel'] = hotel.id
         request.data['slug'] = str(hotel.id) + request.data['name']
         request.data._mutable = False
+
         serializer = CategorySerializer(category, data=request.data, partial=True)
         data = {}
         if serializer.is_valid():
@@ -268,6 +279,7 @@ class HotelRoomCategory(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, slug):
+
         try:
             category = Category.objects.get(slug=slug)
         except Category.DoesNotExist:

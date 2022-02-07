@@ -71,6 +71,7 @@ class BookRoom(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
 
     def get(self, request, slug):
+
         try:
             room = Room.objects.get(slug=slug)
         except Room.DoesNotExist:
