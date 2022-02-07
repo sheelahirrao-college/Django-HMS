@@ -1,12 +1,12 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from .models import Booking
 from accounts.models import Hotel, Customer
 from room.models import Room
 
 
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'customer', 'room', 'hotel', 'booked_on', 'start_date', 'end_date', 'no_of_days', 'slug')
-    search_fields = ('id', 'customer', 'room', 'hotel', 'booked_on', 'start_date', 'end_date', 'no_of_days', 'slug')
+    list_display = ('id', 'customer', 'hotel', 'room', 'booked_on', 'start_date', 'end_date', 'no_of_days', 'slug')
+    search_fields = ('id', 'customer', 'hotel', 'room', 'booked_on', 'start_date', 'end_date', 'no_of_days', 'slug')
 
     filter_horizontal = ()
     list_filter = ()
@@ -16,38 +16,38 @@ class BookingAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if request.user.is_customer is True:
             try:
-                hotel = Hotel.objects.get(user=request.user)
-                obj.hotel = hotel
-                obj.customer = request.user
+                customer = Customer.objects.get(user=request.user)
+                obj.customer = customer
                 obj.save()
-            except Hotel.DoesNotExist:
-                return 'Hotel Does Not Exist'
+            except Customer.DoesNotExist:
+                return messages.error(request, 'Customer Does Not Exist')
         else:
-            return 'You are not Hotel'
+            return messages.error(request, 'You are not Customer User')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
         else:
-            return qs.filter(user=request.user)
+            user = request.user
+            if user.is_customer is True:
+                try:
+                    customer = Customer.objects.get(user=user)
+                    return qs.filter(customer=customer)
+                except Customer.DoesNotExist:
+                    return messages.error(request, 'Customer Does Not Exist')
 
-    def get_form(self, request, obj=None, **kwargs):
+    def get_form(self, request, obj, **kwargs):
         form = super(BookingAdmin, self).get_form(request, obj, **kwargs)
-        try:
-            hotel = Hotel.objects.get(user=request.user)
-        except Hotel.DoesNotExist:
-            return 'Hotel Does Not Exist'
 
-        try:
-            customer = Customer.objects.get(user=request.user)
-        except Customer.DoesNotExist:
-            return 'Customer Does Not Exist'
+        if request.user.is_customer is True:
+            try:
+                customer = Customer.objects.get(user=request.user)
+            except Customer.DoesNotExist:
+                return messages.error(request, 'Customer Does Not Exist')
+        else:
+            return messages.error(request, 'You are not Customer User')
 
-        form.base_fields['room'].queryset = Room.objects.filter(hotel=hotel)
-        form.base_fields['hotel'].queryset = Hotel.objects.filter(user=request.user)
-        form.base_fields['hotel'].initial = hotel
-        form.base_fields['customer'].queryset = Customer.objects.filter(user=request.user)
         form.base_fields['customer'].initial = customer
 
         return form

@@ -2,17 +2,20 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+
+from .permissions import IsRoomManager
 from .serializers import (
     RoomSerializer,
     CategorySerializer,
 )
+
 from room.models import Room, Category
-from accounts.models import Hotel
+from accounts.models import Hotel, RoomManager
 
 
-class Room(APIView):
+class HotelRoom(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsRoomManager]
 
     def get(self, request, slug):
         try:
@@ -21,13 +24,20 @@ class Room(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         if room.hotel != hotel:
             return Response({
-                'response': 'You do not have permission to view this room',
+                'response': 'The Room You Are Trying To View Does Not Belong To Your Hotel',
             })
         serializer = RoomSerializer(room)
         return Response(serializer.data)
@@ -36,7 +46,14 @@ class Room(APIView):
         slug = 'newroom'
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -72,13 +89,20 @@ class Room(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         if room.hotel != hotel:
             return Response({
-                'response': 'You do not have permission to edit this room'
+                'response': 'The Room You Are Trying To Edit Does Not Belong To Your Hotel',
             })
 
         request.data._mutable = True
@@ -103,13 +127,20 @@ class Room(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         if room.hotel != hotel:
             return Response({
-                'response': 'You do not have permission to delete this room'
+                'response': 'The Room You Are Trying To Delete Does Not Belong To Your Hotel',
             })
 
         delete = room.delete()
@@ -121,12 +152,19 @@ class Room(APIView):
         return Response(data=data)
 
 
-class Rooms(APIView):
+class HotelRooms(APIView):
 
     def get(self, request):
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -135,9 +173,9 @@ class Rooms(APIView):
         return Response(serializer.data)
 
 
-class Category(APIView):
+class HotelRoomCategory(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsRoomManager]
 
     def get(self, request, slug):
         try:
@@ -146,13 +184,20 @@ class Category(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         if category.hotel != hotel:
             return Response({
-                'response': 'You do not have permission to view this category'
+                'response': 'The Category You Are Trying To View Does Not Belong To Your Hotel',
             })
 
         serializer = CategorySerializer(category)
@@ -163,7 +208,14 @@ class Category(APIView):
         category = Category()
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -187,13 +239,20 @@ class Category(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         if category.hotel != hotel:
             return Response({
-                'response': 'You do not have permission to edit this category'
+                'response': 'The Category You Are Trying To Edit Does Not Belong To Your Hotel',
             })
 
         request.data._mutable = True
@@ -215,13 +274,20 @@ class Category(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         if category.hotel != hotel:
             return Response({
-                'response': 'You do not have permission to delete this category'
+                'response': 'The Category You Are Trying To Delete Does Not Belong To Your Hotel',
             })
 
         delete = category.delete()
@@ -233,12 +299,19 @@ class Category(APIView):
         return Response(data=data)
 
 
-class Categories(APIView):
+class HotelRoomCategories(APIView):
 
     def get(self, request):
 
         try:
-            hotel = Hotel.objects.get(user=request.user)
+            room_manager = RoomManager.objects.get(user=request.user)
+        except RoomManager.DoesNotExist:
+            return Response({
+                'response': 'Room Manager Object Not Created For This User'
+            })
+
+        try:
+            hotel = Hotel.objects.get(name=room_manager.hotel)
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 

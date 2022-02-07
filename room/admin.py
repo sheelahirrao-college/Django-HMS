@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from .models import Room, Category
 from accounts.models import Hotel
@@ -20,9 +20,9 @@ class RoomAdmin(admin.ModelAdmin):
                 obj.hotel = hotel
                 obj.save()
             except Hotel.DoesNotExist:
-                return 'Hotel Does Not Exist'
+                return messages.error(request, 'Hotel Does Not Exist')
         else:
-            return 'You are not Hotel'
+            return messages.error(request, 'You are not a Hotel User')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -36,13 +36,9 @@ class RoomAdmin(admin.ModelAdmin):
         try:
             hotel = Hotel.objects.get(user=request.user)
         except Hotel.DoesNotExist:
-            return 'Hotel Does Not Exist'
+            return messages.error(request, 'Hotel Does Not Exist')
         form.base_fields['category'].queryset = Category.objects.filter(hotel=hotel)
         form.base_fields['hotel'].queryset = Hotel.objects.filter(user=request.user)
-        try:
-            hotel = Hotel.objects.get(user=request.user)
-        except Hotel.DoesNotExist:
-            return 'Hotel Does Not Exist'
         form.base_fields['hotel'].initial = hotel
         return form
 
@@ -63,9 +59,9 @@ class CategoryAdmin(admin.ModelAdmin):
                 obj.hotel = hotel
                 obj.save()
             except Hotel.DoesNotExist:
-                return 'Hotel Does Not Exist'
+                return messages.error(request, 'Hotel Does Not Exist')
         else:
-            return 'You are not Hotel'
+            return messages.error(request, 'You are not Hotel User')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -77,10 +73,12 @@ class CategoryAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super(CategoryAdmin, self).get_form(request, obj, **kwargs)
         form.base_fields['hotel'].queryset = Hotel.objects.filter(user=request.user)
+
         try:
             hotel = Hotel.objects.get(user=request.user)
         except Hotel.DoesNotExist:
-            return 'Hotel Does Not Exist'
+            return messages.error(request, 'Hotel Does Not Exist')
+
         form.base_fields['hotel'].initial = hotel
         return form
 

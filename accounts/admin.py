@@ -1,5 +1,7 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group
+
 from .models import User, Hotel, RoomManager, Customer
 
 
@@ -14,7 +16,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('email', 'usertype', 'username', 'password')
         }),
         ('Permissions', {
-            'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active', 'groups', 'user_permissions')
         }),
     )
 
@@ -24,22 +26,28 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('email', 'usertype', 'username', 'password1', 'password2')
         }),
         ('Permissions', {
-            'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
+            'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active', 'groups', 'user_permissions')
         }),
     )
 
     ordering = ('id',)
 
     def save_model(self, request, obj, form, change):
-        if obj.usertype == 'Hotel':
+        if obj.usertype == 1:
             obj.is_hotel = True
-            obj.save()
-        elif obj.usertype == 'Room Manager':
+            obj.is_room_manager = False
+            obj.is_customer = False
+        elif obj.usertype == 2:
             obj.is_room_manager = True
-            obj.save()
-        else:
+            obj.is_hotel = False
+            obj.is_customer = False
+        elif obj.usertype == 3:
             obj.is_customer = True
-            obj.save()
+            obj.is_hotel = False
+            obj.is_customer = False
+        else:
+            return messages.error(request, 'Usertype is required')
+        obj.save()
 
 
 class HotelAdmin(admin.ModelAdmin):
