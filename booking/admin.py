@@ -14,41 +14,36 @@ class BookingAdmin(admin.ModelAdmin):
     ordering = ('id',)
 
     def save_model(self, request, obj, form, change):
-        if request.user.is_customer is True:
+        if request.user.role == 2:
             try:
-                customer = Customer.objects.get(user=request.user)
-                obj.customer = customer
+                hotel = Hotel.objects.get(id=request.user.hotel.id)
+                obj.hotel = hotel
                 obj.save()
-            except Customer.DoesNotExist:
-                return messages.error(request, 'Customer Does Not Exist')
+            except Hotel.DoesNotExist:
+                return messages.error(request, 'Hotel Does Not Exist')
         else:
-            return messages.error(request, 'You are not Customer User')
+            return messages.error(request, 'You Are Not A Booking Manager')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
         else:
-            user = request.user
-            if user.is_customer is True:
-                try:
-                    customer = Customer.objects.get(user=user)
-                    return qs.filter(customer=customer)
-                except Customer.DoesNotExist:
-                    return messages.error(request, 'Customer Does Not Exist')
+            hotel = request.user.hotel.id
+            return qs.filter(hotel=hotel)
 
     def get_form(self, request, obj, **kwargs):
         form = super(BookingAdmin, self).get_form(request, obj, **kwargs)
 
-        if request.user.is_customer is True:
-            try:
-                customer = Customer.objects.get(user=request.user)
-            except Customer.DoesNotExist:
-                return messages.error(request, 'Customer Does Not Exist')
-        else:
-            return messages.error(request, 'You are not Customer User')
+        try:
+            hotel = Hotel.objects.get(id=request.user.hotel.id)
+        except Hotel.DoesNotExist:
+            return messages.error(request, 'Hotel Does Not Exist')
 
-        form.base_fields['customer'].initial = customer
+        form.base_fields['customer'].queryset = Customer.objects.filter(hotel=request.user.hotel)
+        form.base_fields['hotel'].queryset = Hotel.objects.filter(id=request.user.hotel.id)
+        form.base_fields['hotel'].initial = hotel
+        form.base_fields['room'].queryset = Room.objects.filter(hotel=hotel)
 
         return form
 

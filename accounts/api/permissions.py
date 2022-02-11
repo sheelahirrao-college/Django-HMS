@@ -1,46 +1,46 @@
 from rest_framework.permissions import BasePermission
 
 
-class IsHotel(BasePermission):
+class IsSuperUser(BasePermission):
 
     def has_permission(self, request, view):
-        if request.user.is_hotel:
+        if request.user.is_superuser:
             return True
         else:
             return False
 
     def has_object_permission(self, request, view, obj):
-        if request.user.is_hotel:
+        if request.user.is_superuser:
             return True
         else:
             return False
 
 
-class IsRoomManager(BasePermission):
+class IsAdmin(BasePermission):
 
     def has_permission(self, request, view):
-        if request.user.is_hotel:
+        if request.user.is_admin:
             return True
         else:
             return False
 
     def has_object_permission(self, request, view, obj):
-        if request.user.is_hotel:
+        if request.user.is_admin:
             return True
         else:
             return False
 
 
-class IsCustomer(BasePermission):
+class IsStaff(BasePermission):
 
     def has_permission(self, request, view):
-        if request.user.is_hotel:
+        if request.user.is_staff:
             return True
         else:
             return False
 
     def has_object_permission(self, request, view, obj):
-        if request.user.is_hotel:
+        if request.user.is_staff:
             return True
         else:
             return False

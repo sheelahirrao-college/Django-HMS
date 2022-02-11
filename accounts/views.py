@@ -1,50 +1,49 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
-from .forms import HotelRegistrationForm, HotelLoginForm
+from .forms import UserRegistrationForm, UserLoginForm
 
-
-def hotel_home(request):
-    return render(request, 'hotel/home.html')
-
-def hotel_login(request):
+def user_login(request):
 
     context = {}
 
-    hotel = request.user
-    if hotel.is_authenticated:
-        return redirect('hotel-home')
+    user = request.user
+    if user.is_authenticated:
+        return redirect('user-home')
 
     if request.POST:
-        form = HotelLoginForm(request.POST)
+        form = UserLoginForm(request.POST)
         if form.is_valid():
             username = request.POST['username']
             password = request.POST['password']
-            hotel = authenticate(username=username, password=password)
+            user = authenticate(username=username, password=password)
 
-            if hotel:
-                login(request, hotel)
-                return redirect('hotel-home')
+            if user:
+                login(request, user)
+                return redirect('user-home')
 
     else:
-        form = HotelLoginForm()
+        form = UserLoginForm()
 
-    context['hotel_login'] = form
-    return render(request, 'hotel/login.html', context)
+    context['user_login'] = form
+    return render(request, 'user/login.html', context)
 
-def hotel_register(request):
+def user_register(request):
     context = {}
     if request.POST:
-        form = HotelRegistrationForm(request.POST)
+        form = UserRegistrationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('hotel-login')
+            return redirect('user-login')
         else:
-            context['hotel_register'] = form
+            context['user_register'] = form
     else:
-        form = HotelRegistrationForm()
-        context['hotel_register'] = form
-    return render(request, 'hotel/register.html', context)
+        form = UserRegistrationForm()
+        context['user_register'] = form
+    return render(request, 'user/register.html', context)
 
-def hotel_logout(request):
+def user_home(request):
+    return render(request, 'user/home.html')
+
+def user_logout(request):
     logout(request)
-    return redirect('hotel-login')
+    return redirect('user-login')

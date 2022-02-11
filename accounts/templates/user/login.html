@@ -3,31 +3,31 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Hotel Login</title>
+        <title>User Login</title>
         {% load static %}
-        <link rel="stylesheet" type="text/css" href="{% static '/hotel/css/common.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static '/user/css/common.css' %}">
     </head>
     <body>
-        <h1>Hotel Login</h1>
+        <h1>User Login</h1>
         <div class="card">
             <form action="" method="POST">
                 {% csrf_token %}
-                {% for field in hotel_login %}
+                {% for field in user_login %}
                     <p>
                         {{ field.label_tag }}
                         {{ field }}
                     </p>
                 {% endfor %}
 
-                {% for field in hotel_login %}
+                {% for field in user_login %}
                     {% for error in field.errors %}
                         <p style="color: red">{{ error }}</p>
                     {% endfor %}
                 {% endfor %}
 
-                {% if hotel_login.non_field_errors %}
+                {% if user_login.non_field_errors %}
                     <div style="color: red">
-                        <p style="color: red">{{ hotel_login.non_field_errors }}</p>
+                        <p style="color: red">{{ user_login.non_field_errors }}</p>
                     </div>
                 {% endif %}
 

@@ -5,14 +5,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Hotel Register</title>
         {% load static %}
-        <link rel="stylesheet" type="text/css" href="{% static '/hotel/css/common.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static '/user/css/common.css' %}">
     </head>
     <body>
-        <h1>Hotel Register</h1>
+        <h1>User Register</h1>
         <div class="card">
             <form action="" method="POST">
                 {% csrf_token %}
-                {% for field in hotel_register %}
+                {% for field in user_register %}
                     <p>
                         {{ field.label_tag }}
                         {{ field }}

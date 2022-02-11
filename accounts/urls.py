@@ -4,9 +4,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('home', views.hotel_home, name='hotel-home'),
-    path('login', views.hotel_login, name='hotel-login'),
-    path('logout', views.hotel_logout, name='hotel-logout'),
-    path('register', views.hotel_register, name='hotel-register'),
+    path('home', views.user_home, name='user-home'),
+    path('login', views.user_login, name='user-login'),
+    path('logout', views.user_logout, name='user-logout'),
+    path('register', views.user_register, name='user-register'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

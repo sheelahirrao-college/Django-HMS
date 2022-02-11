@@ -1,93 +1,53 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import Group
 
-from .models import User, Hotel, RoomManager, Customer
+from .models import User, Hotel, Customer
 
 
 class UserAdmin(BaseUserAdmin):
-    list_display = ('id', 'username', 'email', 'usertype', 'date_joined', 'last_login', 'is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
-    search_fields = ('id', 'username', 'email', 'usertype', 'date_joined', 'last_login', 'is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active')
+    list_display = ('id', 'name', 'contact', 'email', 'role', 'hotel', 'username', 'date_joined', 'last_login', 'is_active', 'is_staff', 'is_admin', 'is_superuser')
+    search_fields = ('id', 'name', 'contact', 'email', 'role', 'hotel', 'username', 'date_joined', 'last_login', 'is_active', 'is_staff', 'is_admin', 'is_superuser')
 
     filter_horizontal = ()
     list_filter = ()
     fieldsets = (
         (None, {
-            'fields': ('email', 'usertype', 'username', 'password')
+            'fields': ('name', 'contact', 'email', 'role', 'hotel', 'username', 'password')
         }),
         ('Permissions', {
-            'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active', 'groups', 'user_permissions')
+            'fields': ('is_active', 'is_staff', 'is_admin', 'is_superuser', 'groups', 'user_permissions')
         }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'usertype', 'username', 'password1', 'password2')
+            'fields': ('name', 'contact', 'email', 'role', 'hotel', 'username', 'password1', 'password2')
         }),
         ('Permissions', {
-            'fields': ('is_hotel', 'is_room_manager', 'is_customer', 'is_superuser', 'is_admin', 'is_staff', 'is_active', 'groups', 'user_permissions')
+            'fields': ('is_active', 'is_staff', 'is_admin', 'is_superuser', 'groups', 'user_permissions')
         }),
     )
 
     ordering = ('id',)
-
-    def save_model(self, request, obj, form, change):
-        if obj.usertype == 1:
-            obj.is_hotel = True
-            obj.is_room_manager = False
-            obj.is_customer = False
-        elif obj.usertype == 2:
-            obj.is_room_manager = True
-            obj.is_hotel = False
-            obj.is_customer = False
-        elif obj.usertype == 3:
-            obj.is_customer = True
-            obj.is_hotel = False
-            obj.is_customer = False
-        else:
-            return messages.error(request, 'Usertype is required')
-        obj.save()
 
 
 class HotelAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'contact', 'user')
-    search_fields = ('id', 'name', 'contact', 'user')
+    list_display = ('id', 'name', 'contact', 'slug')
+    search_fields = ('id', 'name', 'contact', 'slug')
 
     filter_horizontal = ()
     list_filter = ()
     fieldsets = (
         (None, {
-            'fields': ('user', 'name', 'contact')
+            'fields': ('name', 'contact', 'slug')
         }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('user', 'name', 'contact')
-        }),
-    )
-
-    ordering = ('id',)
-
-
-class RoomManagerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'contact', 'hotel', 'user')
-    search_fields = ('id', 'name', 'contact', 'hotel', 'user')
-
-    filter_horizontal = ()
-    list_filter = ()
-    fieldsets = (
-        (None, {
-            'fields': ('user', 'name', 'contact', 'hotel')
-        }),
-    )
-
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('user', 'name', 'contact', 'hotel')
+            'fields': ('name', 'contact', 'slug')
         }),
     )
 
@@ -95,28 +55,59 @@ class RoomManagerAdmin(admin.ModelAdmin):
 
 
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'contact', 'user')
-    search_fields = ('id', 'name', 'contact', 'user')
+    list_display = ('id', 'name', 'contact', 'hotel', 'slug')
+    search_fields = ('id', 'name', 'contact', 'hotel', 'slug')
 
     filter_horizontal = ()
     list_filter = ()
     fieldsets = (
         (None, {
-            'fields': ('user', 'name', 'contact')
+            'fields': ('name', 'contact', 'hotel', 'slug')
         }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('user', 'name', 'contact')
+            'fields': ('name', 'contact', 'hotel', 'slug')
         }),
     )
 
     ordering = ('id',)
 
+    def save_model(self, request, obj, form, change):
+        if request.user.role == 3:
+            try:
+                hotel = Hotel.objects.get(id=request.user.hotel.id)
+                obj.hotel = hotel
+                obj.save()
+            except Hotel.DoesNotExist:
+                return messages.error(request, 'Hotel Does Not Exist')
+        else:
+            return messages.error(request, 'You Are Not A Customer Manager')
 
-admin.site.register(Customer, CustomerAdmin)
-admin.site.register(RoomManager, RoomManagerAdmin)
-admin.site.register(Hotel, HotelAdmin)
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        else:
+            hotel = request.user.hotel.id
+            return qs.filter(hotel=hotel)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(CustomerAdmin, self).get_form(request, obj, **kwargs)
+
+        try:
+            hotel = Hotel.objects.get(id=request.user.hotel.id)
+        except Hotel.DoesNotExist:
+            return messages.error(request, 'Hotel Does Not Exist')
+
+        form.base_fields['hotel'].queryset = Hotel.objects.filter(id=request.user.hotel.id)
+        form.base_fields['hotel'].initial = hotel
+
+        return form
+
+
 admin.site.register(User, UserAdmin)
+admin.site.register(Hotel, HotelAdmin)
+admin.site.register(Customer, CustomerAdmin)

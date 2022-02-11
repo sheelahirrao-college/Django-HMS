@@ -5,11 +5,10 @@ from rest_framework import status
 
 from datetime import datetime
 
-from .permissions import IsCustomer
+from .permissions import IsSuperUser, IsAdmin, IsStaff
 from .serializers import (
     BookingSerializer,
     RoomSerializer,
-    RoomDetailsSerializer,
 )
 
 from room.models import Room
@@ -17,9 +16,9 @@ from booking.models import Booking
 from accounts.models import Hotel, Customer
 
 
-class AvailableRooms(APIView):
+class BookRoom(APIView):
 
-    permission_classes = [IsAuthenticated, IsCustomer]
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
 
     def check_availability(self, room, sd, ed):
 
@@ -42,7 +41,9 @@ class AvailableRooms(APIView):
                         else:
                             return False
 
-    def get(self, request):
+    def get(self, request, slug):
+
+        slug = 'availablerooms'
 
         start_date = request.data['start_date']
         end_date = request.data['end_date']
@@ -50,42 +51,27 @@ class AvailableRooms(APIView):
         sd = datetime.strptime(start_date, '%Y-%m-%d').date()
         ed = datetime.strptime(end_date, '%Y-%m-%d').date()
 
-        rooms = Room.objects.all()
+        rooms = Room.objects.filter(hotel=request.user.hotel)
         available_rooms = []
         for room in rooms:
             response = self.check_availability(room, sd, ed)
             if response is True:
                 available_rooms.append(room)
 
-        if not available_rooms:
+        if request.user.role != 2:
             return Response({
-                'response': 'No Rooms Available For These Dates'
+                'response': 'You Cannot View The Available Rooms - Only Reservation Manager Can Do That',
             })
         else:
-            serializer = RoomDetailsSerializer(available_rooms, many=True)
-            return Response(serializer.data)
-
-
-class BookRoom(APIView):
-
-    permission_classes = [IsAuthenticated, IsCustomer]
-
-    def get(self, request, slug):
-
-        try:
-            room = Room.objects.get(slug=slug)
-        except Room.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        serializer = RoomDetailsSerializer(room)
-        return Response(serializer.data)
+            if not available_rooms:
+                return Response({
+                    'response': 'No Rooms Available For These Dates'
+                })
+            else:
+                serializer = RoomSerializer(available_rooms, many=True)
+                return Response(serializer.data)
 
     def post(self, request, slug):
-
-        try:
-            customer = Customer.objects.get(user=request.user)
-        except Customer.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
             room = Room.objects.get(slug=slug)
@@ -97,36 +83,58 @@ class BookRoom(APIView):
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        request.data._mutable = True
-        request.data['customer'] = customer.id
-        request.data['hotel'] = hotel.id
-        request.data['room'] = room.number
-
-        start_date = request.data['start_date']
-        end_date = request.data['end_date']
-
-        sd = datetime.strptime(start_date, '%Y-%m-%d').date()
-        ed = datetime.strptime(end_date, '%Y-%m-%d').date()
-
-        request.data['no_of_days'] = (ed - sd).days
-        request.data._mutable = False
-
-        if sd > ed:
-            return Response('Start Date must come before End Date')
+        if request.user.role != 2:
+            return Response({
+                'response': 'You Cannot Book A Room - Only Booking Manager Can Do That',
+            })
         else:
-            serializer = BookingSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
+            request.data._mutable = True
+            request.data['hotel'] = hotel.id
+            request.data['room'] = room.number
+
+            start_date = request.data['start_date']
+            end_date = request.data['end_date']
+
+            sd = datetime.strptime(start_date, '%Y-%m-%d').date()
+            ed = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+            request.data['no_of_days'] = (ed - sd).days
+            request.data._mutable = False
+
+
+            if sd > ed:
                 return Response({
-                    'response': 'Room Booked Successfully',
-                    'data': serializer.data,
+                    'response': 'Start Date Must Come Before End Date',
                 })
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    hotel = Hotel.objects.get(name=request.user.hotel)
+                except Hotel.DoesNotExist:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+
+                serializer = BookingSerializer(data=request.data)
+
+                customers = Customer.objects.filter(hotel=hotel).values('id')
+                for c in customers:
+                    if request.data['customer'] != c['id']:
+                        pass
+                    else:
+                        if serializer.is_valid():
+                            serializer.save()
+                            return Response({
+                                'response': 'Room Booked Successfully',
+                                'data': serializer.data,
+                            })
+                        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response({
+                    'response': 'Customer Does Not Exist',
+                    'customer': c['id'],
+                })
 
 
-class RoomBookedStatus(APIView):
+class BookedRoomStatus(APIView):
 
-    permission_classes = [IsAuthenticated, IsCustomer]
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
 
     def put(self, request, slug):
 
@@ -161,50 +169,59 @@ class RoomBookedStatus(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CustomerBooking(APIView):
+class CustomerBookings(APIView):
 
-    permission_classes = [IsAuthenticated, IsCustomer]
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
 
     def get(self, request, slug):
 
-        try:
-            booking = Booking.objects.get(slug=slug)
-        except Booking.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        if slug == 'allbookings':
 
-        serializer = BookingSerializer(booking)
-        return Response(serializer.data)
+            customer = request.data['customer']
+
+            bookings = Booking.objects.filter(customer=customer)
+
+            if request.user.role != 2:
+                return Response({
+                    'response': 'You Cannot View The Bookings - Only Booking Manager Can Do That',
+                })
+            else:
+                if not bookings:
+                    return Response('This Customer Has No Bookings')
+                else:
+                    serializer = BookingSerializer(bookings, many=True)
+                    return Response(serializer.data)
+        else:
+
+            if request.user.role != 2:
+                return Response({
+                    'response': 'You Cannot View The Booking - Only Booking Manager Can Do That',
+                })
+            else:
+                try:
+                    booking = Booking.objects.get(slug=slug)
+                except Booking.DoesNotExist:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+
+                serializer = BookingSerializer(booking)
+                return Response(serializer.data)
 
     def delete(self, request, slug):
 
-        try:
-            booking = Booking.objects.get(slug=slug)
-        except Booking.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        delete = booking.delete()
-        data = {}
-        if delete:
-            data['success'] = 'Booking Cancelled Successfully'
+        if request.user.role != 2:
+            return Response({
+                'response': 'You Cannot Delete The Booking - Only Booking Manager Can Do That',
+            })
         else:
-            data['failure'] = 'Booking Cancellation Failed'
-        return Response(data=data)
+            try:
+                booking = Booking.objects.get(slug=slug)
+            except Booking.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
-
-class CustomerBookings(APIView):
-
-    permission_classes = [IsAuthenticated, IsCustomer]
-
-    def get(self, request):
-
-        try:
-            customer = Customer.objects.get(user=request.user)
-        except Customer.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        bookings = Booking.objects.filter(customer=customer)
-        if not bookings:
-            return Response('You Have No Bookings')
-        else:
-            serializer = BookingSerializer(bookings, many=True)
-            return Response(serializer.data)
+            delete = booking.delete()
+            data = {}
+            if delete:
+                data['success'] = 'Booking Cancelled Successfully'
+            else:
+                data['failure'] = 'Booking Cancellation Failed'
+            return Response(data=data)
