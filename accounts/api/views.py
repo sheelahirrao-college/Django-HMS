@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.contrib.auth import authenticate
 
+from .decorators import role_required, validate_customer_manager, validate_user_hotel
 from .permissions import IsSuperUser, IsAdmin, IsStaff
 from .serializers import (
     UserRegistrationSerializer,
@@ -23,12 +24,7 @@ class UserRegistration(APIView):
         serializer = UserRegistrationSerializer(data=request.data)
         data = {}
 
-        try:
-            hotel = Hotel.objects.get(id=request.data['hotel'])
-        except Hotel.DoesNotExist:
-            return Response('Hotel Does Not Exist')
-
-        if hotel:
+        if request.data['hotel'] == request.user.hotel.id:
             if serializer.is_valid():
                 user = serializer.save()
                 data['response'] = "User Successfully Registered"
@@ -72,6 +68,7 @@ class HotelProfile(APIView):
 
     permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
 
+    @validate_user_hotel
     def get(self, request, slug):
 
         try:
@@ -79,32 +76,23 @@ class HotelProfile(APIView):
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.hotel != hotel or request.user.is_superuser is False:
-            return Response({
-                'response': 'You Cannot View The Hotel Details - Only Users Related To Hotel Can',
-            })
-        else:
-            serializer = HotelSerializer(hotel)
-            return Response(serializer.data)
+        serializer = HotelSerializer(hotel)
+        return Response(serializer.data)
 
     def post(self, request, slug):
 
         slug = 'newhotel'
 
-        if request.user.is_superuser is False:
+        serializer = HotelSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
             return Response({
-                'response': 'You Cannot Add A Hotel - Only Superusers Can',
+                'response': 'Hotel Successfully Added',
+                'data': serializer.data,
             })
-        else:
-            serializer = HotelSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({
-                    'response': 'Hotel Successfully Added',
-                    'data': serializer.data,
-                })
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+    @validate_user_hotel
     def put(self, request, slug):
 
         try:
@@ -112,19 +100,15 @@ class HotelProfile(APIView):
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.hotel != hotel or request.user.is_superuser is False:
-            return Response({
-                'response': 'You Cannot Edit The Hotel Details - Only Users Related To Hotel Can',
-            })
-        else:
-            serializer = HotelSerializer(hotel, data=request.data, partial=True)
-            data = {}
-            if serializer.is_valid():
-                serializer.save()
-                data['response'] = 'Hotel Updated Successfully'
-                return Response(data=data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = HotelSerializer(hotel, data=request.data, partial=True)
+        data = {}
+        if serializer.is_valid():
+            serializer.save()
+            data['response'] = 'Hotel Updated Successfully'
+            return Response(data=data)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+    @validate_user_hotel
     def delete(self, request, slug):
 
         try:
@@ -132,40 +116,37 @@ class HotelProfile(APIView):
         except Hotel.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if request.user.hotel != hotel or request.user.is_superuser is False:
-            return Response({
-                'response': 'You Cannot Delete The Hotel - Only Users Related To Hotel Can',
-            })
+        delete = hotel.delete()
+        data = {}
+        if delete:
+            data['success'] = 'Hotel Deleted Successfully'
         else:
-            delete = hotel.delete()
-            data = {}
-            if delete:
-                data['success'] = 'Hotel Deleted Successfully'
-            else:
-                data['failed'] = 'Hotel Delete Failed'
+            data['failed'] = 'Hotel Delete Failed'
 
-            return Response(data=data)
+        return Response(data=data)
 
 
 class CustomerProfile(APIView):
 
     permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
 
+    @role_required(allowed_roles=[3])
     def get(self, request, slug):
 
-        if request.user.role != 3 or request.user.is_superuser is False:
+        if request.user.is_superuser is False:
             return Response({
                 'response': 'You Cannot View The Customer Details - Only Customer Managers Can',
             })
-        else:
-            try:
-                customer = Customer.objects.get(slug=slug)
-            except Customer.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
 
-            serializer = CustomerSerializer(customer)
-            return Response(serializer.data)
+        try:
+            customer = Customer.objects.get(slug=slug)
+        except Customer.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
+        serializer = CustomerSerializer(customer)
+        return Response(serializer.data)
+
+    @role_required(allowed_roles=[3])
     def post(self, request, slug):
 
         slug = 'newcustomer'
@@ -174,64 +155,61 @@ class CustomerProfile(APIView):
             return Response({
                 'response': 'You Cannot Add A Customer - Only Customer Managers Can',
             })
-        else:
-            try:
-                hotel = Hotel.objects.get(name=request.user.hotel)
-            except Hotel.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
 
-            request.data._mutable = True
-            request.data['hotel'] = hotel.id
-            request.data._mutable = False
+        request.data._mutable = True
+        request.data['hotel'] = request.user.hotel.id
+        request.data._mutable = False
 
-            serializer = CustomerSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({
-                    'response': 'Customer Successfully Added',
-                    'data': serializer.data,
-                })
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = CustomerSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'response': 'Customer Successfully Added',
+                'data': serializer.data,
+            })
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+    @role_required(allowed_roles=[3])
     def put(self, request, slug):
 
         if request.user.role != 3 or request.user.is_superuser is False:
             return Response({
                 'response': 'You Cannot Edit The Customer Details - Only Customer Managers Can',
             })
-        else:
-            try:
-                customer = Customer.objects.get(slug=slug)
-            except Customer.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
 
-            serializer = CustomerSerializer(customer, data=request.data, partial=True)
-            data = {}
-            if serializer.is_valid():
-                serializer.save()
-                data['response'] = 'Customer Updated Successfully'
-                return Response(data=data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            customer = Customer.objects.get(slug=slug)
+        except Customer.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
+        serializer = CustomerSerializer(customer, data=request.data, partial=True)
+        data = {}
+        if serializer.is_valid():
+            serializer.save()
+            data['response'] = 'Customer Updated Successfully'
+            return Response(data=data)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    @role_required(allowed_roles=[3])
     def delete(self, request, slug):
 
         if request.user.role != 3 or request.user.is_superuser is False:
             return Response({
                 'response': 'You Cannot Delete The Customer - Only Customer Managers Can',
             })
+
+        try:
+            customer = Customer.objects.get(slug=slug)
+        except Customer.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        delete = customer.delete()
+
+        data = {}
+
+        if delete:
+            data['success'] = 'Customer Deleted Successfully'
         else:
-            try:
-                customer = Customer.objects.get(slug=slug)
-            except Customer.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+            data['failed'] = 'Customer Delete Failed'
 
-            delete = customer.delete()
-
-            data = {}
-
-            if delete:
-                data['success'] = 'Customer Deleted Successfully'
-            else:
-                data['failed'] = 'Customer Delete Failed'
-
-            return Response(data=data)
+        return Response(data=data)
