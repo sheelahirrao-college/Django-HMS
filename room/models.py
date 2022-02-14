@@ -31,6 +31,17 @@ class Room(models.Model):
         return self.number
 
 
+class RoomService(models.Model):
+    hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    cleaning_required = models.BooleanField(default=False)
+    description = models.CharField(max_length=100, blank=True, null=True)
+    slug = models.SlugField(blank=True, unique=True)
+
+    def str(self):
+        return self.room
+
+
 @receiver(pre_save, sender=Category)
 def pre_save_receiver_category(sender, instance, *args, **kwargs):
     if not instance.slug:
@@ -51,3 +62,14 @@ def pre_save_receiver_room(sender, instance, *args, **kwargs):
 
 
 pre_save.connect(pre_save_receiver_room, sender=Room)
+
+
+@receiver(pre_save, sender=RoomService)
+def pre_save_receiver_room_service(sender, instance, *args, **kwargs):
+    if not instance.slug:
+        instance.slug = slugify(instance.room)
+    else:
+        instance.slug = slugify(instance.room)
+
+
+pre_save.connect(pre_save_receiver_room_service, sender=RoomService)
