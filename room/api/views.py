@@ -9,9 +9,10 @@ from .permissions import IsSuperUser, IsAdmin, IsStaff
 from .serializers import (
     RoomSerializer,
     CategorySerializer,
+    RoomServiceSerializer,
 )
 
-from room.models import Room, Category
+from room.models import Room, Category, RoomService
 from accounts.models import Hotel
 
 
@@ -119,16 +120,13 @@ class HotelRoom(APIView):
 
         slug = 'newroom'
 
-        # request.data._mutable = True
-        # request.data['hotel'] = request.user.hotel.id
-        # if request.data['booked_from'] is None and request.data['booked_to'] is None:
-        #     request.data['available'] = True
-        # else:
-        #     request.data['available'] = False
-        # request.data._mutable = False
-
-        request.get['hotel'] = request.user.hotel.id
-        request.get['available'] = True
+        request.data._mutable = True
+        request.data['hotel'] = request.user.hotel.id
+        if request.data['booked_from'] is None and request.data['booked_to'] is None:
+            request.data['available'] = True
+        else:
+            request.data['available'] = False
+        request.data._mutable = False
 
         serializer = RoomSerializer(data=request.data, partial=True)
 
@@ -199,4 +197,86 @@ class HotelRooms(APIView):
 
         room = Room.objects.filter(hotel=request.user.hotel)
         serializer = RoomSerializer(room, many=True)
+        return Response(serializer.data)
+
+
+class HotelRoomService(APIView):
+
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def get(self, request, slug):
+        try:
+            room_service = RoomService.objects.get(slug=slug, hotel=request.user.hotel)
+        except RoomService.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = RoomServiceSerializer(room_service)
+        return Response(serializer.data)
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def post(self, request, slug):
+
+        slug = 'newroomservice'
+
+        request.data._mutable = True
+        request.data['hotel'] = request.user.hotel.id
+        request.data._mutable = False
+
+        serializer = RoomServiceSerializer(data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'response': 'Room Service Generated Successfully',
+                'room data': serializer.data,
+            })
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def put(self, request, slug):
+
+        try:
+            room_service = RoomService.objects.get(slug=slug, hotel=request.user.hotel)
+        except RoomService.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        request.data._mutable = True
+        request.data['hotel'] = request.user.hotel.id
+        request.data._mutable = False
+
+        serializer = RoomSerializer(room_service, data=request.data, partial=True)
+        data = {}
+        if serializer.is_valid():
+            serializer.save()
+            data['success'] = "Room Service Updated Successfully"
+            return Response(data=data)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def delete(self, request, slug):
+
+        try:
+            room_service = RoomService.objects.get(slug=slug, hotel=request.user.hotel)
+        except RoomService.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        delete = room_service.delete()
+        data = {}
+        if delete:
+            data['success'] = 'Room Service Deleted Successfully'
+        else:
+            data['failure'] = 'Room Service Delete Failed'
+        return Response(data=data)
+
+
+class HotelRoomServices(APIView):
+
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def get(self, request):
+
+        room_services = RoomService.objects.filter(hotel=request.user.hotel)
+        serializer = RoomSerializer(room_services, many=True)
         return Response(serializer.data)
