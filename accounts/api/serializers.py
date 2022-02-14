@@ -1,68 +1,41 @@
 from rest_framework import serializers
-from accounts.models import Hotel, RoomManager, Customer
+from accounts.models import User, Hotel, Customer
 
 
-class HotelRegistrationSerializer(serializers.ModelSerializer):
+class UserRegistrationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'contact', 'email', 'role', 'hotel', 'username', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
+        def save(self):
+            user = User(
+                name=self.validated_data['name'],
+                contact=self.validated_data['contact'],
+                email=self.validated_data['email'],
+                role=self.validated_data['role'],
+                hotel=self.validated_data['hotel'],
+                username=self.validated_data['username'],
+            )
+            password = self.validated_data['password']
+
+            user.set_password(password)
+            user.save()
+            return user
+
+
+class HotelSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Hotel
-        fields = ['name', 'email', 'contact', 'username', 'password']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
-
-    def save(self):
-        hotel = Hotel(
-            name=self.validated_data['name'],
-            email=self.validated_data['email'],
-            contact=self.validated_data['contact'],
-            username=self.validated_data['username'],
-        )
-        password = self.validated_data['password']
-
-        hotel.set_password(password)
-        hotel.save()
-        return hotel
+        fields = ['id', 'name', 'contact', 'slug']
 
 
-class CustomerRegistrationSerializer(serializers.ModelSerializer):
+class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ['name', 'email', 'contact', 'username', 'password']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        fields = ['id', 'name', 'contact', 'address', 'hotel', 'slug']
 
-    def save(self):
-        customer = Customer(
-            name=self.validated_data['name'],
-            email=self.validated_data['email'],
-            contact=self.validated_data['contact'],
-            username=self.validated_data['username'],
-        )
-        password = self.validated_data['password']
-
-        customer.set_password(password)
-        customer.save()
-        return customer
-
-
-class RoomManagerRegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RoomManager
-        fields = ['name', 'email', 'contact', 'username', 'password', 'hotel']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
-
-    def save(self):
-        room_manager = RoomManager(
-            name=self.validated_data['name'],
-            email=self.validated_data['email'],
-            contact=self.validated_data['contact'],
-            username=self.validated_data['username'],
-        )
-        password = self.validated_data['password']
-
-        room_manager.set_password(password)
-        room_manager.save()
-        return room_manager

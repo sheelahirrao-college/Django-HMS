@@ -7,18 +7,11 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['id', 'hotel', 'room', 'booked_on', 'start_date', 'end_date', 'no_of_days', 'slug']
+        fields = ['id', 'customer', 'hotel', 'room', 'booked_on', 'start_date', 'end_date', 'no_of_days', 'slug']
 
 
 class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ['id', 'number', 'category', 'image', 'hotel', 'booked_from', 'booked_to', 'available', 'slug']
-
-
-class RoomDetailsSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Room
-        fields = ['id', 'category', 'image', 'hotel']
+        fields = ['id', 'number', 'category', 'hotel', 'booked_from', 'booked_to', 'available', 'slug']

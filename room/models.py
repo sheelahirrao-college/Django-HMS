@@ -7,19 +7,21 @@ from django.dispatch import receiver
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=100, unique=True)
     hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(blank=True, unique=True)
+
+    class Meta:
+        verbose_name_plural = 'Categories'
 
     def __str__(self):
         return self.name
 
 
 class Room(models.Model):
+    hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
     number = models.CharField(max_length=10, unique=True)
     category = models.ForeignKey(Category, to_field='name', blank=True, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="room-images")
-    hotel = models.ForeignKey(Hotel, blank=True, on_delete=models.CASCADE)
     booked_from = models.DateField(blank=True, null=True)
     booked_to = models.DateField(blank=True, null=True)
     available = models.BooleanField(default=True)

@@ -21,6 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # API URLs
+    path('api-auth/', include('rest_framework.urls')),
     path('api/accounts/', include('accounts.api.urls', 'accounts_api')),
     path('api/room/', include('room.api.urls', 'room_api')),
     path('api/booking/', include('booking.api.urls', 'booking_api')),

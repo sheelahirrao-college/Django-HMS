@@ -2,139 +2,43 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+
+from django.utils.decorators import method_decorator
+from .decorators import role_required, validate_room_manager
+from .permissions import IsSuperUser, IsAdmin, IsStaff
 from .serializers import (
     RoomSerializer,
     CategorySerializer,
 )
+
 from room.models import Room, Category
+from accounts.models import Hotel
 
 
-class RoomAPIView(APIView):
+class HotelRoomCategory(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
 
+    @method_decorator(role_required(allowed_roles=[1]))
     def get(self, request, slug):
+
         try:
-            room = Room.objects.get(slug=slug)
-        except Room.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        hotel = request.user
-        if room.hotel != hotel:
-            return Response({
-                'response': 'You do not have permission to view this room',
-            })
-        serializer = RoomSerializer(room)
-        return Response(serializer.data)
-
-    def post(self, request, slug):
-        slug = 'newroom'
-        request.data._mutable = True
-        request.data['hotel'] = request.user.id
-        if request.data['booked_from'] is None and request.data['booked_to'] is None:
-            request.data['available'] = True
-        else:
-            request.data['available'] = False
-        request.data._mutable = False
-        serializer = RoomSerializer(data=request.data, partial=True)
-
-        categories = Category.objects.filter(hotel=request.user.id).values('name')
-        for c in categories:
-            if request.data['category'] != c['name']:
-                return Response({
-                    'response': 'Invalid Category',
-                    'category': c,
-                })
-            else:
-                if serializer.is_valid():
-                    serializer.save()
-                    return Response({
-                        'response': 'Room Created Successfully',
-                        'data': serializer.data,
-                    })
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def put(self, request, slug):
-        try:
-            room = Room.objects.get(slug=slug)
-        except Room.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        hotel = request.user
-        if room.hotel != hotel:
-            return Response({
-                'response': 'You do not have permission to edit this room'
-            })
-
-        request.data._mutable = True
-        request.data['hotel'] = request.user.id
-        if request.data['booked_from'] is None and request.data['booked_to'] is None:
-            request.data['available'] = True
-        else:
-            request.data['available'] = False
-        request.data._mutable = False
-        serializer = RoomSerializer(room, data=request.data, partial=True)
-        data = {}
-        if serializer.is_valid():
-            serializer.save()
-            data['success'] = "Room Updated Successfully"
-            return Response(data=data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, slug):
-        try:
-            room = Room.objects.get(slug=slug)
-        except Room.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        hotel = request.user
-        if room.hotel != hotel:
-            return Response({
-                'response': 'You do not have permission to delete this room'
-            })
-
-        delete = room.delete()
-        data = {}
-        if delete:
-            data['success'] = 'Room Deleted Successfully'
-        else:
-            data['failure'] = 'Room Delete Failed'
-        return Response(data=data)
-
-
-class RoomsAPIView(APIView):
-
-    def get(self, request):
-        room = Room.objects.filter(hotel=request.user.id)
-        serializer = RoomSerializer(room, many=True)
-        return Response(serializer.data)
-
-
-class CategoryAPIView(APIView):
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, slug):
-        try:
-            category = Category.objects.get(slug=slug)
+            category = Category.objects.get(slug=slug, hotel=request.user.hotel)
         except Category.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
-        hotel = request.user
-        if category.hotel != hotel:
-            return Response({
-                'response': 'You do not have permission to view this category'
-            })
 
         serializer = CategorySerializer(category)
         return Response(serializer.data)
 
+    @method_decorator(role_required(allowed_roles=[1]))
     def post(self, request, slug):
+
         slug = 'newcategory'
+
         category = Category()
 
         request.data._mutable = True
-        request.data['hotel'] = request.user.id
+        request.data['hotel'] = request.user.hotel.id
         request.data._mutable = False
         serializer = CategorySerializer(category, data=request.data)
 
@@ -142,45 +46,38 @@ class CategoryAPIView(APIView):
             serializer.save()
             return Response({
                 'response': 'Category Created Successfully',
-                'data': serializer.data,
+                'category data': serializer.data,
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+    @method_decorator(role_required(allowed_roles=[1]))
     def put(self, request, slug):
+
         try:
-            category = Category.objects.get(slug=slug)
+            category = Category.objects.get(slug=slug, hotel=request.user.hotel)
         except Category.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        hotel = request.user
-        if category.hotel != hotel:
-            return Response({
-                'response': 'You do not have permission to edit this category'
-            })
-
         request.data._mutable = True
-        request.data['hotel'] = request.user.id
-        request.data['slug'] = request.user.id + request.data.number
+        request.data['hotel'] = request.user.hotel.id
+        request.data['slug'] = str(request.data['hotel']) + request.data['name']
         request.data._mutable = False
+
         serializer = CategorySerializer(category, data=request.data, partial=True)
         data = {}
         if serializer.is_valid():
             serializer.save()
             data['success'] = "Category Updated Successfully"
             return Response(data=data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+    @method_decorator(role_required(allowed_roles=[1]))
     def delete(self, request, slug):
+
         try:
-            category = Category.objects.get(slug=slug)
+            category = Category.objects.get(slug=slug, hotel=request.user.hotel)
         except Category.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
-        hotel = request.user
-        if category.hotel != hotel:
-            return Response({
-                'response': 'You do not have permission to delete this category'
-            })
 
         delete = category.delete()
         data = {}
@@ -191,9 +88,115 @@ class CategoryAPIView(APIView):
         return Response(data=data)
 
 
-class CategoriesAPIView(APIView):
+class HotelRoomCategories(APIView):
 
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
+
+    @method_decorator(role_required(allowed_roles=[1]))
     def get(self, request):
-        category = Category.objects.filter(hotel=request.user.id)
+
+        category = Category.objects.filter(hotel=request.user.hotel)
         serializer = CategorySerializer(category, many=True)
+        return Response(serializer.data)
+
+
+class HotelRoom(APIView):
+
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def get(self, request, slug):
+        try:
+            room = Room.objects.get(slug=slug, hotel=request.user.hotel)
+        except Room.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = RoomSerializer(room)
+        return Response(serializer.data)
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def post(self, request, slug):
+
+        slug = 'newroom'
+
+        # request.data._mutable = True
+        # request.data['hotel'] = request.user.hotel.id
+        # if request.data['booked_from'] is None and request.data['booked_to'] is None:
+        #     request.data['available'] = True
+        # else:
+        #     request.data['available'] = False
+        # request.data._mutable = False
+
+        request.get['hotel'] = request.user.hotel.id
+        request.get['available'] = True
+
+        serializer = RoomSerializer(data=request.data, partial=True)
+
+        categories = Category.objects.filter(hotel=request.user.hotel).values('name')
+        for c in categories:
+            if request.data['category'] != c['name']:
+                pass
+            else:
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response({
+                        'response': 'Room Created Successfully',
+                        'room data': serializer.data,
+                    })
+                return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return Response({
+            'response': 'Category Does Not Exist',
+            'category': c['name'],
+        })
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def put(self, request, slug):
+
+        try:
+            room = Room.objects.get(slug=slug, hotel=request.user.hotel)
+        except Room.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        request.data._mutable = True
+        request.data['hotel'] = request.user.hotel.id
+        if request.data['booked_from'] is None and request.data['booked_to'] is None:
+            request.data['available'] = True
+        else:
+            request.data['available'] = False
+        request.data._mutable = False
+
+        serializer = RoomSerializer(room, data=request.data, partial=True)
+        data = {}
+        if serializer.is_valid():
+            serializer.save()
+            data['success'] = "Room Updated Successfully"
+            return Response(data=data)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def delete(self, request, slug):
+
+        try:
+            room = Room.objects.get(slug=slug, hotel=request.user.hotel)
+        except Room.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        delete = room.delete()
+        data = {}
+        if delete:
+            data['success'] = 'Room Deleted Successfully'
+        else:
+            data['failure'] = 'Room Delete Failed'
+        return Response(data=data)
+
+
+class HotelRooms(APIView):
+
+    permission_classes = [IsAuthenticated, IsSuperUser, IsAdmin, IsStaff]
+
+    @method_decorator(role_required(allowed_roles=[1]))
+    def get(self, request):
+
+        room = Room.objects.filter(hotel=request.user.hotel)
+        serializer = RoomSerializer(room, many=True)
         return Response(serializer.data)

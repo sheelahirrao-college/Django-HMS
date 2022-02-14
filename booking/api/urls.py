@@ -1,12 +1,14 @@
 from django.urls import path
 from .views import (
     BookRoom,
-    AvailableRooms,
+    BookedRoomStatus,
+    CustomerBookings,
 )
 
 app_name = 'booking'
 
 urlpatterns = [
-    path('bookroomapi/<slug>', BookRoom.as_view(), name='book-room-api'),
-    path('availableroomsapi', AvailableRooms.as_view(), name='available-rooms-api'),
+    path('customerbookings/<slug>', CustomerBookings.as_view(), name='customer-bookings-api'),
+    path('roombookedstatus/<slug>', BookedRoomStatus.as_view(), name='room-booked-status-api'),
+    path('bookroom/<slug>', BookRoom.as_view(), name='book-room-api'),
 ]
