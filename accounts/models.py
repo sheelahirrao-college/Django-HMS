@@ -1,12 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-
 from django.conf import settings
 from django.db.models.signals import post_save, pre_save
 from django.utils.text import slugify
 from django.dispatch import receiver
-from rest_framework.authtoken.models import Token
 
+from rest_framework.authtoken.models import Token
 
 class Hotel(models.Model):
     name = models.CharField(max_length=100, unique=True)

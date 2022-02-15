@@ -71,6 +71,8 @@ class BookRoom(APIView):
     @role_required(allowed_roles=[2])
     def post(self, request, slug):
 
+        slug = 'newbooking'
+
         try:
             room = Room.objects.get(slug=slug)
         except Room.DoesNotExist:
