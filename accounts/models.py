@@ -7,6 +7,9 @@ from django.dispatch import receiver
 
 from rest_framework.authtoken.models import Token
 
+from enum import Enum
+
+
 class Hotel(models.Model):
     name = models.CharField(max_length=100, unique=True)
     contact = models.CharField(max_length=10, unique=True)
@@ -62,17 +65,25 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
 
-    roles = (
-        (0, None),
-        (1, 'Room Manager'),
-        (2, 'Booking Manager'),
-        (3, 'Customer Manager'),
-    )
+    class ROLE(Enum):
+        n = 'None'
+        rm = 'Room Manager'
+        bm = 'Booking Manager'
+        cm = 'Customer Manager'
+        # none = (0, 'None')
+        # room_manager = (1, 'Room Manager')
+        # booking_manager = (2, 'Booking Manager')
+        # customer_manager = (3, 'Customer Manager')
+
+        # @classmethod
+        # def get_value(cls, role):
+        #     return role.value[0]
 
     name = models.CharField(max_length=100)
     contact = models.CharField(max_length=10, unique=True)
     email = models.EmailField(unique=True)
-    role = models.PositiveSmallIntegerField(choices=roles, blank=True, null=True, default=0)
+    role = models.CharField(max_length=20, choices=[(role.name, role.value) for role in ROLE])
+    # role = models.CharField(max_length=20, choices=[r.value for r in ROLE], default=ROLE.get_value(ROLE.none))
     hotel = models.ForeignKey(Hotel, blank=True, null=True, on_delete=models.CASCADE)
     username = models.CharField(max_length=100, unique=True)
     date_joined = models.DateTimeField(auto_now_add=True)
